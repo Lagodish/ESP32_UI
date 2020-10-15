@@ -67,7 +67,7 @@ SELECT(Lang,LangueMenu,"Langue",doNothing,noEvent,noStyle
 
 uint8_t PERF=1;
 SELECT(PERF,PerformanceMenu,"Perf",doNothing,noEvent,noStyle
-  ,VALUE("Week",0,doNothing,noEvent)
+  ,VALUE("Eco",0,doNothing,noEvent)
   ,VALUE("Balanced",1,doNothing,noEvent)
   ,VALUE("High",2,doNothing,noEvent)
 );
@@ -90,8 +90,8 @@ MENU(FanMenu,"Fan",doNothing,noEvent,noStyle
 uint16_t hrs=18;
 uint16_t mins=30;
 altMENU(menu,timeMenu,"Time",doNothing,noEvent,noStyle,(systemStyles)(_asPad|Menu::_menuData|Menu::_canNav|_parentDraw)
-  ,FIELD(hrs,"","",0,23,1,0,doNothing,noEvent,noStyle)
-  ,FIELD(mins,"","",0,59,1,0,doNothing,noEvent,noStyle)
+  ,FIELD(hrs,"","",0,23,1,0,doNothing,noEvent,wrapStyle)
+  ,FIELD(mins,"","",0,59,1,0,doNothing,noEvent,wrapStyle)
 );
 
 uint8_t BRT_Disp = 30;
@@ -140,16 +140,35 @@ result doAlert(eventMask e, prompt &item) {
 //when menu is suspended
 result idle(menuOut& o,idleEvent e) {
   o.clear();
+  const char DEGREE_SYMBOL[] = { 0xB0, '\0' };
+  const char ALERT_SYMBOL[] = { 71, '\0' };
+  const char bluetooth_SYMBOL[] = { 74, '\0' };
+  const char wifi_SYMBOL[] = { 80, '\0' };
+  const char setup_SYMBOL[] = { 66, '\0' };
   switch(e) {
     case idleStart:o.println("suspending menu!");break;
     case idling:{
-    o.setCursor(0,0);
+    
+ /*   o.setCursor(0,0);
     o.print("Main Screen");
     o.setCursor(0,1);
     o.print("Temp=5.5 C");
     o.setCursor(0,3);
-    o.print("Press *->Settings");break;}
-    case idleEnd:o.println("resuming menu.");break;
+    o.print("Press *->Settings");*/
+    //open_iconic_all_2x
+    u8g2.setFont(u8g2_font_fub30_tf);
+    o.setCursor(2,2); //(x,y 0,0 at top left)
+    o.print("5.5 C");
+    u8g2.drawUTF8(75, 45, DEGREE_SYMBOL);
+
+    u8g2.setFont(u8g2_font_open_iconic_embedded_2x_t);
+
+    u8g2.drawUTF8(8, 60, ALERT_SYMBOL);
+    u8g2.drawUTF8(40, 60, bluetooth_SYMBOL);
+    u8g2.drawUTF8(72, 60, wifi_SYMBOL);
+    u8g2.drawUTF8(106, 60, setup_SYMBOL);
+    break;}
+    case idleEnd:o.println("resuming menu.");u8g2.setFont(fontName);break;
   }
 
   return proceed;
@@ -158,6 +177,7 @@ result idle(menuOut& o,idleEvent e) {
 void setup() {
   Serial.begin(9600);
   while(!Serial);
+  Serial.println("");Serial.flush();
   Serial.println("menu 4.x test");Serial.flush();
   // encButton.begin();
   // encoder.begin();
@@ -171,6 +191,8 @@ void setup() {
   // disable second option
   //mainMenu[1].enabled=disabledStatus;
   nav.idleTask=idle;//point a function to be used when menu is suspended
+  nav.timeOut=30;
+  nav.idleOn(idle);
   Serial.println("Use keys + - * /");Serial.flush();
   Serial.println("to control the menu navigation");Serial.flush();
   Serial.println("setup done.");Serial.flush();
@@ -185,5 +207,6 @@ void loop() {
     u8g2.firstPage();
     do nav.doOutput(); while(u8g2.nextPage());
   }
- // delay(100);//simulate other tasks delay
+
+  delay(100);//simulate other tasks delay
 }
