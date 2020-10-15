@@ -156,17 +156,18 @@ result idle(menuOut& o,idleEvent e) {
     o.setCursor(0,3);
     o.print("Press *->Settings");*/
     //open_iconic_all_2x
-    u8g2.setFont(u8g2_font_fub30_tf);
-    o.setCursor(2,2); //(x,y 0,0 at top left)
-    o.print("5.5 C");
-    u8g2.drawUTF8(75, 45, DEGREE_SYMBOL);
+    u8g2.setFont(u8g2_font_fur35_tr);
+    o.setCursor(1,2); //(x,y 0,0 at top left)
+    o.print(String(5.5,1)+" C");
+    u8g2.setFont(u8g2_font_ncenB24_tf);
+    u8g2.drawUTF8(80, 35, DEGREE_SYMBOL);
 
     u8g2.setFont(u8g2_font_open_iconic_embedded_2x_t);
 
-    u8g2.drawUTF8(8, 60, ALERT_SYMBOL);
-    u8g2.drawUTF8(40, 60, bluetooth_SYMBOL);
-    u8g2.drawUTF8(72, 60, wifi_SYMBOL);
-    u8g2.drawUTF8(106, 60, setup_SYMBOL);
+    u8g2.drawUTF8(8, 64, ALERT_SYMBOL);
+    u8g2.drawUTF8(40, 64, bluetooth_SYMBOL);
+    u8g2.drawUTF8(72, 64, wifi_SYMBOL);
+    u8g2.drawUTF8(106, 64, setup_SYMBOL);
     break;}
     case idleEnd:o.println("resuming menu.");u8g2.setFont(fontName);break;
   }
@@ -203,7 +204,8 @@ void loop() {
   
   if (nav.changed(0)) {//only draw if menu changed for gfx device
     //change checking leaves more time for other tasks
-    u8g2.setContrast(BRT_Disp);
+    int contrast = map(BRT_Disp, 0, 100, 0, 190);
+    u8g2.setContrast(contrast);
     u8g2.firstPage();
     do nav.doOutput(); while(u8g2.nextPage());
   }
