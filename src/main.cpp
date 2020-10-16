@@ -41,6 +41,8 @@ bool LightCtrl=HIGH;
 bool FanCtrl=HIGH;
 bool Temp_mode=HIGH;
 bool Silence=LOW;
+uint8_t SetTemp=10; //Setted temperature
+uint8_t Wireless=0;
 uint8_t Lang=1;
 uint8_t PERF=1;
 uint8_t BRT_max = 80;
@@ -57,6 +59,7 @@ result action1(eventMask e,navNode& nav, prompt &item) {
   EEPROM.write(6,LightCtrl);
   EEPROM.write(7,FanCtrl);
   EEPROM.write(8,Silence);
+  EEPROM.write(9,Wireless);
 
   EEPROM.commit();
   return proceed;
@@ -84,6 +87,12 @@ TOGGLE(Temp_mode,TempMenu,"Temp: ",action1,enterEvent,noStyle
 TOGGLE(Silence,setSilence,"Silence Mode: ",action1,enterEvent,noStyle
   ,VALUE("On",HIGH,doNothing,noEvent)
   ,VALUE("Off",LOW,doNothing,noEvent)
+);
+
+TOGGLE(Wireless,setWireless,"Wireless: ",action1,enterEvent,noStyle
+  ,VALUE("Off",0,doNothing,noEvent)
+  ,VALUE("Wifi",1,doNothing,noEvent)
+  ,VALUE("Bluetooth",2,doNothing,noEvent)
 );
 
 
@@ -129,7 +138,8 @@ MENU(mainMenu,"Settings",doNothing,noEvent,wrapStyle
   ,SUBMENU(LightMenu)
   ,SUBMENU(FanMenu)
   ,SUBMENU(TempMenu)
-  ,SUBMENU(PerformanceMenu) 
+  ,SUBMENU(PerformanceMenu)
+  ,SUBMENU(setWireless)
   ,FIELD(BRT_Disp,"Disp Brt","%",0,100,10,0,action1,enterEvent,wrapStyle) 
   //,OP("System test",doAlert,enterEvent)
   ,EXIT("<Back")
@@ -164,8 +174,11 @@ result doAlert(eventMask e, prompt &item) {
   nav.idleOn(alert);
   return proceed;
 }
+
+int blink=0;
 double temp = 9.0;
 double tempPrint =0.0;
+
 //when menu is suspended
 result idle(menuOut& o,idleEvent e) {
   o.clear();
@@ -203,9 +216,10 @@ result idle(menuOut& o,idleEvent e) {
     o.print("C");
     }else{o.print("F");}
     u8g2.setFont(u8g2_font_open_iconic_embedded_2x_t); //{Eeeeeeeeeeeeeeeee}
-    u8g2.drawUTF8(8, 64, ALERT_SYMBOL);
-    u8g2.drawUTF8(40, 64, bluetooth_SYMBOL);
-    u8g2.drawUTF8(72, 64, wifi_SYMBOL);
+    if(blink%2==0){u8g2.drawUTF8(8, 64, ALERT_SYMBOL);}
+    if(Wireless==1){u8g2.drawUTF8(72, 64, wifi_SYMBOL);}
+    if(Wireless==2){u8g2.drawUTF8(72, 64, bluetooth_SYMBOL);}
+    //u8g2.drawUTF8(72, 64, SYMBOL);
     u8g2.drawUTF8(106, 64, setup_SYMBOL);
     break;}
     case idleEnd:/*o.println("resuming menu.");*/u8g2.setFont(fontName);break;
@@ -231,6 +245,7 @@ void setup() {
   LightCtrl = EEPROM.read(6);
   FanCtrl = EEPROM.read(7);
   Silence = EEPROM.read(8);
+  Wireless = EEPROM.read(9);
   
   u8g2.setFont(fontName);
   // u8g2.setBitmapMode(0);
@@ -242,18 +257,19 @@ void setup() {
   nav.idleOn(idle);
 }
 
-uint8_t refresh = 0;
+//uint8_t refresh = 0;
 void loop() {
   nav.doInput();
-  if (nav.changed(0)||(refresh>3)) {
-    refresh=0;
+ // if (nav.changed(0)) {
+ //   refresh=0;
     temp+=0.1;
     int contrast = map(BRT_Disp, 0, 100, 0, 190);
     u8g2.setContrast(contrast);
     u8g2.firstPage();
     do nav.doOutput(); while(u8g2.nextPage());
-  }
-  else{refresh++;}
-
-  delay(100);//simulate other tasks delay
+ // }
+ // else{refresh++;}
+  blink++;
+  if(blink>=11){blink=0;}
+  delay(300);//simulate other tasks delay
 }
