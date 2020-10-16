@@ -53,7 +53,7 @@ TOGGLE(FanCtrl,setFan,"Auto Fan Ctrl: ",doNothing,noEvent,noStyle//,doExit,enter
 
 //TempMenu
 bool Temp_mode=HIGH;
-TOGGLE(Temp_mode,TempMenu,"Temperature: ",doNothing,noEvent,noStyle//,doExit,enterEvent,noStyle
+TOGGLE(Temp_mode,TempMenu,"Temp: ",doNothing,noEvent,noStyle//,doExit,enterEvent,noStyle
   ,VALUE("Celsius",HIGH,doNothing,noEvent)
   ,VALUE("Fahrenheit",LOW,doNothing,noEvent)
 );
@@ -65,14 +65,14 @@ TOGGLE(Silence,setSilence,"Silence Mode: ",doNothing,noEvent,noStyle//,doExit,en
 );
 
 uint8_t Lang=1;
-SELECT(Lang,LangueMenu,"Langue",doNothing,noEvent,noStyle
+TOGGLE(Lang,LangueMenu,"Langue: ",doNothing,noEvent,noStyle
   ,VALUE("Ru",0,doNothing,noEvent)
   ,VALUE("En",1,doNothing,noEvent)
   ,VALUE("Ge",2,doNothing,noEvent)
 );
 
 uint8_t PERF=1;
-SELECT(PERF,PerformanceMenu,"Perf",doNothing,noEvent,noStyle
+TOGGLE(PERF,PerformanceMenu,"Perf: ",doNothing,noEvent,noStyle
   ,VALUE("Eco",0,doNothing,noEvent)
   ,VALUE("Balanced",1,doNothing,noEvent)
   ,VALUE("High",2,doNothing,noEvent)
@@ -82,14 +82,14 @@ SELECT(PERF,PerformanceMenu,"Perf",doNothing,noEvent,noStyle
 uint8_t BRT = 80;
 MENU(LightMenu,"Light",doNothing,noEvent,noStyle
   ,SUBMENU(setLight)
-  ,FIELD(BRT,"Max brightness","%",0,100,10,1,doNothing,noEvent,wrapStyle)
+  ,FIELD(BRT,"Max brightness:","%",0,100,10,1,doNothing,noEvent,wrapStyle)
   ,EXIT("<Back")
 );
 
 uint8_t SPD = 80;
 MENU(FanMenu,"Fan",doNothing,noEvent,noStyle
   ,SUBMENU(setFan)
-  ,FIELD(SPD,"Max speed","%",0,100,10,1,doNothing,noEvent,wrapStyle)
+  ,FIELD(SPD,"Max speed:","%",0,100,10,1,doNothing,noEvent,wrapStyle)
   ,EXIT("<Back")
 );
 
@@ -109,7 +109,7 @@ MENU(mainMenu,"Settings",doNothing,noEvent,wrapStyle
   ,SUBMENU(FanMenu)
   ,SUBMENU(TempMenu)
   ,SUBMENU(PerformanceMenu) 
-  ,FIELD(BRT_Disp,"Disp Brt","%",0,100,10,1,doNothing,noEvent,wrapStyle) 
+  ,FIELD(BRT_Disp,"Disp Brt:","%",0,100,10,1,doNothing,noEvent,wrapStyle) 
   ,OP("System test",doAlert,enterEvent)
   ,EXIT("Close")
 );
@@ -158,7 +158,7 @@ result idle(menuOut& o,idleEvent e) {
   switch(e) {
     case idleStart:/*o.println("suspending menu!")*/;break;
     case idling:{
-      
+
     if(!Temp_mode){tempPrint =(tempPrint*9/5) + 32;}
     if(tempPrint<9.95){
     u8g2.setFont(u8g2_font_ncenB24_tf);
