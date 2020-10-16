@@ -46,7 +46,7 @@ TOGGLE(LightCtrl,setLight,"Auto Light: ",doNothing,noEvent,noStyle//,doExit,ente
 );
 
 bool FanCtrl=HIGH;
-TOGGLE(FanCtrl,setFan,"Auto Fan Ctrl: ",doNothing,noEvent,noStyle//,doExit,enterEvent,noStyle
+TOGGLE(FanCtrl,setFan,"Auto Fan: ",doNothing,noEvent,noStyle//,doExit,enterEvent,noStyle
   ,VALUE("On",HIGH,doNothing,noEvent)
   ,VALUE("Off",LOW,doNothing,noEvent)
 );
@@ -80,16 +80,16 @@ TOGGLE(PERF,PerformanceMenu,"Perf: ",doNothing,noEvent,noStyle
 
 
 uint8_t BRT = 80;
-MENU(LightMenu,"Light",doNothing,noEvent,noStyle
+MENU(LightMenu,"Light control",doNothing,noEvent,noStyle
   ,SUBMENU(setLight)
-  ,FIELD(BRT,"Max brightness:","%",0,100,10,1,doNothing,noEvent,wrapStyle)
+  ,FIELD(BRT,"Max brt","%",0,100,10,1,doNothing,noEvent,wrapStyle)
   ,EXIT("<Back")
 );
 
 uint8_t SPD = 80;
-MENU(FanMenu,"Fan",doNothing,noEvent,noStyle
+MENU(FanMenu,"Fan control",doNothing,noEvent,noStyle
   ,SUBMENU(setFan)
-  ,FIELD(SPD,"Max speed:","%",0,100,10,1,doNothing,noEvent,wrapStyle)
+  ,FIELD(SPD,"Max spd","%",0,100,10,1,doNothing,noEvent,wrapStyle)
   ,EXIT("<Back")
 );
 
@@ -109,7 +109,7 @@ MENU(mainMenu,"Settings",doNothing,noEvent,wrapStyle
   ,SUBMENU(FanMenu)
   ,SUBMENU(TempMenu)
   ,SUBMENU(PerformanceMenu) 
-  ,FIELD(BRT_Disp,"Disp Brt:","%",0,100,10,1,doNothing,noEvent,wrapStyle) 
+  ,FIELD(BRT_Disp,"Disp Brt","%",0,100,10,1,doNothing,noEvent,wrapStyle) 
   ,OP("System test",doAlert,enterEvent)
   ,EXIT("Close")
 );
