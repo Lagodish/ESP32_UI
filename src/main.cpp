@@ -51,6 +51,12 @@ TOGGLE(FanCtrl,setFan,"Auto Fan Ctrl: ",doNothing,noEvent,noStyle//,doExit,enter
   ,VALUE("Off",LOW,doNothing,noEvent)
 );
 
+//TempMenu
+bool Temp_mode=HIGH;
+TOGGLE(Temp_mode,TempMenu,"Temperature: ",doNothing,noEvent,noStyle//,doExit,enterEvent,noStyle
+  ,VALUE("Celsius",HIGH,doNothing,noEvent)
+  ,VALUE("Fahrenheit",LOW,doNothing,noEvent)
+);
 
 bool Silence=LOW;
 TOGGLE(Silence,setSilence,"Silence Mode: ",doNothing,noEvent,noStyle//,doExit,enterEvent,noStyle
@@ -94,13 +100,14 @@ altMENU(menu,timeMenu,"Time",doNothing,noEvent,noStyle,(systemStyles)(_asPad|Men
   ,FIELD(mins,"","",0,59,1,0,doNothing,noEvent,wrapStyle)
 );
 
-uint8_t BRT_Disp = 30;
+uint8_t BRT_Disp = 20;
 MENU(mainMenu,"Settings",doNothing,noEvent,wrapStyle
   ,SUBMENU(setSilence)
   ,SUBMENU(timeMenu)
   ,SUBMENU(LangueMenu)
   ,SUBMENU(LightMenu)
   ,SUBMENU(FanMenu)
+  ,SUBMENU(TempMenu)
   ,SUBMENU(PerformanceMenu) 
   ,FIELD(BRT_Disp,"Disp Brt","%",0,100,10,1,doNothing,noEvent,wrapStyle) 
   ,OP("System test",doAlert,enterEvent)
@@ -136,40 +143,51 @@ result doAlert(eventMask e, prompt &item) {
   nav.idleOn(alert);
   return proceed;
 }
-
+double temp = 9.0;
+double tempPrint =0.0;
 //when menu is suspended
 result idle(menuOut& o,idleEvent e) {
   o.clear();
   const char DEGREE_SYMBOL[] = { 0xB0, '\0' };
-  const char ALERT_SYMBOL[] = { 71, '\0' };
+  const char ALERT_SYMBOL[] = { 71, '\0' }; //DOTO как в Aplle
   const char bluetooth_SYMBOL[] = { 74, '\0' };
-  const char wifi_SYMBOL[] = { 80, '\0' };
+  const char wifi_SYMBOL[] = { 80, '\0' }; //Заменить значок (не вытянутый)
   const char setup_SYMBOL[] = { 66, '\0' };
+  if(temp>11){temp=9;}
+  tempPrint = temp;
   switch(e) {
-    case idleStart:o.println("suspending menu!");break;
+    case idleStart:/*o.println("suspending menu!")*/;break;
     case idling:{
-    
- /*   o.setCursor(0,0);
-    o.print("Main Screen");
-    o.setCursor(0,1);
-    o.print("Temp=5.5 C");
-    o.setCursor(0,3);
-    o.print("Press *->Settings");*/
-    //open_iconic_all_2x
-    u8g2.setFont(u8g2_font_fur35_tr);
-    o.setCursor(1,2); //(x,y 0,0 at top left)
-    o.print(String(5.5,1)+" C");
+      
+    if(!Temp_mode){tempPrint =(tempPrint*9/5) + 32;}
+    if(tempPrint<9.95){
     u8g2.setFont(u8g2_font_ncenB24_tf);
-    u8g2.drawUTF8(80, 35, DEGREE_SYMBOL);
-
-    u8g2.setFont(u8g2_font_open_iconic_embedded_2x_t);
-
+    u8g2.drawUTF8(83, 33, DEGREE_SYMBOL);
+    u8g2.setFont(u8g2_font_fur35_tr);
+    o.setCursor(2,2); 
+    o.print(String(tempPrint,1)); 
+    u8g2.setFont(u8g2_font_fur30_tr);
+    o.setCursor(13,2);
+    }
+    else{
+    u8g2.setFont(u8g2_font_ncenB24_tf);
+    u8g2.drawUTF8(91, 33, DEGREE_SYMBOL);
+    u8g2.setFont(u8g2_font_fur35_tr);
+    o.setCursor(0,2);
+    o.print(String(tempPrint,1)); 
+    u8g2.setFont(u8g2_font_fur30_tr);
+    o.setCursor(14,2);
+    }
+    if(Temp_mode){
+    o.print("C");
+    }else{o.print("F");}
+    u8g2.setFont(u8g2_font_open_iconic_embedded_2x_t); //{Eeeeeeeeeeeeeeeee}
     u8g2.drawUTF8(8, 64, ALERT_SYMBOL);
     u8g2.drawUTF8(40, 64, bluetooth_SYMBOL);
     u8g2.drawUTF8(72, 64, wifi_SYMBOL);
     u8g2.drawUTF8(106, 64, setup_SYMBOL);
     break;}
-    case idleEnd:o.println("resuming menu.");u8g2.setFont(fontName);break;
+    case idleEnd:/*o.println("resuming menu.");*/u8g2.setFont(fontName);break;
   }
 
   return proceed;
@@ -199,16 +217,19 @@ void setup() {
   Serial.println("setup done.");Serial.flush();
 }
 
+uint8_t refresh = 0;
 void loop() {
   nav.doInput();
-  
-  if (nav.changed(0)) {//only draw if menu changed for gfx device
+  if (nav.changed(0)||(refresh>3)) {//only draw if menu changed for gfx device
     //change checking leaves more time for other tasks
+    refresh=0;
+    temp+=0.1;
     int contrast = map(BRT_Disp, 0, 100, 0, 190);
     u8g2.setContrast(contrast);
     u8g2.firstPage();
     do nav.doOutput(); while(u8g2.nextPage());
   }
+  else{refresh++;}
 
   delay(100);//simulate other tasks delay
 }
