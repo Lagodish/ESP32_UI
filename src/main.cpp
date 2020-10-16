@@ -1,7 +1,5 @@
 #include <Arduino.h>
-#include <U8g2lib.h>
 #include <Wire.h>
-
 #include <menu.h>
 #include <menuIO/u8g2Out.h>
 // #include <menuIO/encoderIn.h>
@@ -9,19 +7,20 @@
 #include <menuIO/chainStream.h>
 #include <menuIO/serialOut.h>
 #include <menuIO/serialIn.h>
+#include <EEPROM.h>
+
+#define EEPROM_SIZE 30
 
 using namespace Menu;
 
-#define LEDPIN GPIO_NUM_0
-
-  #define fontName u8g2_font_7x13_mf
-  #define fontX 7
-  #define fontY 16
-  #define offsetX 0
-  #define offsetY 0
-  #define U8_Width 128
-  #define U8_Height 64
-  #define USE_HWI2C
+#define fontName u8g2_font_7x13_mf
+#define fontX 7
+#define fontY 16
+#define offsetX 0
+#define offsetY 0
+#define U8_Width 128
+#define U8_Height 64
+#define USE_HWI2C
 
 U8G2_SH1106_128X64_NONAME_1_HW_I2C u8g2(U8G2_R2,22,21,U8X8_PIN_NONE);
 
@@ -38,58 +37,81 @@ const colorDef<uint8_t> colors[6] MEMMODE={
 
 result doAlert(eventMask e, prompt &item);
 
-
 bool LightCtrl=HIGH;
-TOGGLE(LightCtrl,setLight,"Auto Light: ",doNothing,noEvent,noStyle//,doExit,enterEvent,noStyle
-  ,VALUE("On",HIGH,doNothing,noEvent)
-  ,VALUE("Off",LOW,doNothing,noEvent)
-);
-
 bool FanCtrl=HIGH;
-TOGGLE(FanCtrl,setFan,"Auto Fan: ",doNothing,noEvent,noStyle//,doExit,enterEvent,noStyle
+bool Temp_mode=HIGH;
+bool Silence=LOW;
+uint8_t Lang=1;
+uint8_t PERF=1;
+uint8_t BRT_max = 80;
+uint8_t SPD_max = 80;
+uint8_t BRT_Disp = 20;
+
+result action1(eventMask e,navNode& nav, prompt &item) {
+  EEPROM.write(0, BRT_Disp);
+  EEPROM.write(1,BRT_max);
+  EEPROM.write(2,SPD_max);
+  EEPROM.write(3,PERF);
+  EEPROM.write(4,Lang);
+  EEPROM.write(5,Temp_mode);
+  EEPROM.write(6,LightCtrl);
+  EEPROM.write(7,FanCtrl);
+  EEPROM.write(8,Silence);
+
+  EEPROM.commit();
+  return proceed;
+}
+
+
+TOGGLE(LightCtrl,setLight,"Auto Light: ",action1,enterEvent,noStyle
   ,VALUE("On",HIGH,doNothing,noEvent)
   ,VALUE("Off",LOW,doNothing,noEvent)
 );
 
-//TempMenu
-bool Temp_mode=HIGH;
-TOGGLE(Temp_mode,TempMenu,"Temp: ",doNothing,noEvent,noStyle//,doExit,enterEvent,noStyle
+
+TOGGLE(FanCtrl,setFan,"Auto Fan: ",action1,enterEvent,noStyle
+  ,VALUE("On",HIGH,doNothing,noEvent)
+  ,VALUE("Off",LOW,doNothing,noEvent)
+);
+
+
+TOGGLE(Temp_mode,TempMenu,"Temp: ",action1,enterEvent,noStyle
   ,VALUE("Celsius",HIGH,doNothing,noEvent)
   ,VALUE("Fahrenheit",LOW,doNothing,noEvent)
 );
 
-bool Silence=LOW;
-TOGGLE(Silence,setSilence,"Silence Mode: ",doNothing,noEvent,noStyle//,doExit,enterEvent,noStyle
+
+TOGGLE(Silence,setSilence,"Silence Mode: ",action1,enterEvent,noStyle
   ,VALUE("On",HIGH,doNothing,noEvent)
   ,VALUE("Off",LOW,doNothing,noEvent)
 );
 
-uint8_t Lang=1;
-TOGGLE(Lang,LangueMenu,"Langue: ",doNothing,noEvent,noStyle
+
+TOGGLE(Lang,LangueMenu,"Langue: ",action1,enterEvent,noStyle
   ,VALUE("Ru",0,doNothing,noEvent)
   ,VALUE("En",1,doNothing,noEvent)
   ,VALUE("Ge",2,doNothing,noEvent)
 );
 
-uint8_t PERF=1;
-TOGGLE(PERF,PerformanceMenu,"Perf: ",doNothing,noEvent,noStyle
+
+TOGGLE(PERF,PerformanceMenu,"Perf: ",action1,enterEvent,noStyle
   ,VALUE("Eco",0,doNothing,noEvent)
   ,VALUE("Balanced",1,doNothing,noEvent)
   ,VALUE("High",2,doNothing,noEvent)
 );
 
 
-uint8_t BRT = 80;
+
 MENU(LightMenu,"Light control",doNothing,noEvent,noStyle
   ,SUBMENU(setLight)
-  ,FIELD(BRT,"Max brt","%",0,100,10,1,doNothing,noEvent,wrapStyle)
+  ,FIELD(BRT_max,"Max brt","%",0,100,10,1,action1,enterEvent,wrapStyle)
   ,EXIT("<Back")
 );
 
-uint8_t SPD = 80;
+
 MENU(FanMenu,"Fan control",doNothing,noEvent,noStyle
   ,SUBMENU(setFan)
-  ,FIELD(SPD,"Max spd","%",0,100,10,1,doNothing,noEvent,wrapStyle)
+  ,FIELD(SPD_max,"Max spd","%",0,100,10,1,action1,enterEvent,wrapStyle)
   ,EXIT("<Back")
 );
 
@@ -100,7 +122,6 @@ altMENU(menu,timeMenu,"Time",doNothing,noEvent,noStyle,(systemStyles)(_asPad|Men
   ,FIELD(mins,"","",0,59,1,0,doNothing,noEvent,wrapStyle)
 );
 
-uint8_t BRT_Disp = 20;
 MENU(mainMenu,"Settings",doNothing,noEvent,wrapStyle
   ,SUBMENU(setSilence)
   ,SUBMENU(timeMenu)
@@ -109,9 +130,9 @@ MENU(mainMenu,"Settings",doNothing,noEvent,wrapStyle
   ,SUBMENU(FanMenu)
   ,SUBMENU(TempMenu)
   ,SUBMENU(PerformanceMenu) 
-  ,FIELD(BRT_Disp,"Disp Brt","%",0,100,10,1,doNothing,noEvent,wrapStyle) 
-  ,OP("System test",doAlert,enterEvent)
-  ,EXIT("Close")
+  ,FIELD(BRT_Disp,"Disp Brt","%",0,100,10,0,action1,enterEvent,wrapStyle) 
+  //,OP("System test",doAlert,enterEvent)
+  ,EXIT("<Back")
 );
 
 #define MAX_DEPTH 2
@@ -196,14 +217,21 @@ result idle(menuOut& o,idleEvent e) {
 void setup() {
   Serial.begin(9600);
   while(!Serial);
-  Serial.println("");Serial.flush();
-  Serial.println("menu 4.x test");Serial.flush();
-  // encButton.begin();
-  // encoder.begin();
-
   Wire.begin();
   u8g2.begin();
 
+  EEPROM.begin(EEPROM_SIZE);
+  delay(10);
+  BRT_Disp = EEPROM.read(0);
+  BRT_max = EEPROM.read(1);
+  SPD_max = EEPROM.read(2);
+  PERF = EEPROM.read(3);
+  Lang = EEPROM.read(4);
+  Temp_mode = EEPROM.read(5);
+  LightCtrl = EEPROM.read(6);
+  FanCtrl = EEPROM.read(7);
+  Silence = EEPROM.read(8);
+  
   u8g2.setFont(fontName);
   // u8g2.setBitmapMode(0);
 
@@ -212,16 +240,12 @@ void setup() {
   nav.idleTask=idle;//point a function to be used when menu is suspended
   nav.timeOut=30;
   nav.idleOn(idle);
-  Serial.println("Use keys + - * /");Serial.flush();
-  Serial.println("to control the menu navigation");Serial.flush();
-  Serial.println("setup done.");Serial.flush();
 }
 
 uint8_t refresh = 0;
 void loop() {
   nav.doInput();
-  if (nav.changed(0)||(refresh>3)) {//only draw if menu changed for gfx device
-    //change checking leaves more time for other tasks
+  if (nav.changed(0)||(refresh>3)) {
     refresh=0;
     temp+=0.1;
     int contrast = map(BRT_Disp, 0, 100, 0, 190);
