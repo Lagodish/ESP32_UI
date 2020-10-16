@@ -2,12 +2,12 @@
 #include <Wire.h>
 #include <menu.h>
 #include <menuIO/u8g2Out.h>
-// #include <menuIO/encoderIn.h>
-// #include <menuIO/keyIn.h>
 #include <menuIO/chainStream.h>
 #include <menuIO/serialOut.h>
 #include <menuIO/serialIn.h>
 #include <EEPROM.h>
+
+//xSemaphoreCreateMutex
 
 #define EEPROM_SIZE 30
 
@@ -34,8 +34,6 @@ const colorDef<uint8_t> colors[6] MEMMODE={
   {{0,1},{0,0,1}},//cursorColor
   {{1,1},{1,0,0}},//titleColor
 };
-
-result doAlert(eventMask e, prompt &item);
 
 bool LightCtrl=HIGH;
 bool FanCtrl=HIGH;
@@ -91,8 +89,8 @@ TOGGLE(Silence,setSilence,"Silence Mode: ",action1,enterEvent,noStyle
 
 TOGGLE(Wireless,setWireless,"Wireless: ",action1,enterEvent,noStyle
   ,VALUE("Off",0,doNothing,noEvent)
-  ,VALUE("Wifi",1,doNothing,noEvent)
-  ,VALUE("Bluetooth",2,doNothing,noEvent)
+  ,VALUE("WiFi",1,doNothing,noEvent)
+  ,VALUE("BLE",2,doNothing,noEvent)
 );
 
 
@@ -123,29 +121,46 @@ MENU(FanMenu,"Fan control",doNothing,noEvent,noStyle
   ,FIELD(SPD_max,"Max spd","%",0,100,10,1,action1,enterEvent,wrapStyle)
   ,EXIT("<Back")
 );
+ 
+uint16_t hrs=12;
+uint16_t mins=0;
 
-uint16_t hrs=18;
-uint16_t mins=30;
-altMENU(menu,timeMenu,"Time",doNothing,noEvent,noStyle,(systemStyles)(_asPad|Menu::_menuData|Menu::_canNav|_parentDraw)
-  ,FIELD(hrs,"","",0,23,1,0,doNothing,noEvent,wrapStyle)
+uint16_t year=2020;
+uint16_t month=10;
+uint16_t day=15;
+
+PADMENU(YMD_Menu,"Date",doNothing,noEvent,noStyle
+  ,FIELD(year,"","/",1900,3000,20,1,doNothing,noEvent,noStyle)
+  ,FIELD(month,"","/",1,12,1,0,doNothing,noEvent,wrapStyle)
+  ,FIELD(day,"","",1,31,1,0,doNothing,noEvent,wrapStyle)
+);
+
+PADMENU(HM_Menu,"Time",doNothing,noEvent,noStyle
+  ,FIELD(hrs,"",":",0,23,1,0,doNothing,noEvent,wrapStyle)
   ,FIELD(mins,"","",0,59,1,0,doNothing,noEvent,wrapStyle)
 );
 
-MENU(mainMenu,"Settings",doNothing,noEvent,wrapStyle
-  ,SUBMENU(setSilence)
-  ,SUBMENU(timeMenu)
-  ,SUBMENU(LangueMenu)
-  ,SUBMENU(LightMenu)
-  ,SUBMENU(FanMenu)
-  ,SUBMENU(TempMenu)
-  ,SUBMENU(PerformanceMenu)
-  ,SUBMENU(setWireless)
-  ,FIELD(BRT_Disp,"Disp Brt","%",0,100,10,0,action1,enterEvent,wrapStyle) 
-  //,OP("System test",doAlert,enterEvent)
+MENU(timeMenu,"Time & Date",doNothing,noEvent,noStyle
+  ,SUBMENU(HM_Menu)
+  ,SUBMENU(YMD_Menu)
   ,EXIT("<Back")
 );
 
-#define MAX_DEPTH 2
+
+MENU(mainMenu,"Settings",doNothing,noEvent,noStyle
+  ,SUBMENU(setSilence)
+  ,SUBMENU(timeMenu)
+  ,SUBMENU(LightMenu)
+  ,SUBMENU(FanMenu)
+  ,SUBMENU(PerformanceMenu)
+  ,SUBMENU(setWireless)
+  ,SUBMENU(TempMenu)
+  ,SUBMENU(LangueMenu)
+  ,FIELD(BRT_Disp,"Display Brt","%",0,100,10,0,action1,enterEvent,noStyle)
+  ,EXIT("<Back")
+);
+
+#define MAX_DEPTH 3
 
 serialIn serial(Serial);
 MENU_INPUTS(in,&serial);
@@ -158,29 +173,12 @@ MENU_OUTPUTS(out,MAX_DEPTH
 
 NAVROOT(nav,mainMenu,MAX_DEPTH,in,out);
 
-result alert(menuOut& o,idleEvent e) {
-  if (e==idling) {
-    o.setCursor(0,0);
-    o.print("System test - OK!");
-    o.setCursor(0,1);
-    o.print("press [select]");
-    o.setCursor(0,2);
-    o.print("to continue...");
-  }
-  return proceed;
-}
-
-result doAlert(eventMask e, prompt &item) {
-  nav.idleOn(alert);
-  return proceed;
-}
-
 int blink=0;
 double temp = 9.0;
 double tempPrint =0.0;
 
 //when menu is suspended
-result idle(menuOut& o,idleEvent e) {
+result MainScreen(menuOut& o,idleEvent e) {
   o.clear();
   const char DEGREE_SYMBOL[] = { 0xB0, '\0' };
   const char ALERT_SYMBOL[] = { 71, '\0' }; //DOTO как в Aplle
@@ -252,23 +250,22 @@ void setup() {
 
   // disable second option
   //mainMenu[1].enabled=disabledStatus;
-  nav.idleTask=idle;//point a function to be used when menu is suspended
+  nav.idleTask=MainScreen;//point a function to be used when menu is suspended
   nav.timeOut=30;
-  nav.idleOn(idle);
+  nav.idleOn(MainScreen);
 }
 
-//uint8_t refresh = 0;
+
 void loop() {
   nav.doInput();
+  //nav.doNav(upCmd);
  // if (nav.changed(0)) {
- //   refresh=0;
     temp+=0.1;
     int contrast = map(BRT_Disp, 0, 100, 0, 190);
     u8g2.setContrast(contrast);
     u8g2.firstPage();
     do nav.doOutput(); while(u8g2.nextPage());
  // }
- // else{refresh++;}
   blink++;
   if(blink>=11){blink=0;}
   delay(300);//simulate other tasks delay
