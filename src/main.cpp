@@ -6,6 +6,17 @@
 #include <menuIO/serialOut.h>
 #include <menuIO/serialIn.h>
 #include <EEPROM.h>
+#include <GyverButton.h>
+
+#define GP1 36
+#define GP2 39
+#define GP3 2
+#define GP4 4
+
+GButton butt1(GP1);
+GButton butt2(GP2);
+GButton butt3(GP3);
+GButton butt4(GP4);
 
 //xSemaphoreCreateMutex
 
@@ -22,7 +33,7 @@ using namespace Menu;
 #define U8_Height 64
 #define USE_HWI2C
 
-U8G2_SH1106_128X64_NONAME_1_HW_I2C u8g2(U8G2_R2,22,21,U8X8_PIN_NONE);
+U8G2_SH1106_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0,22,21,U8X8_PIN_NONE);
 
 typedef u8g2_uint_t u8g_uint_t;
 
@@ -39,6 +50,8 @@ bool LightCtrl=HIGH;
 bool FanCtrl=HIGH;
 bool Temp_mode=HIGH;
 bool Silence=LOW;
+bool mainScreenOn = true;
+
 uint8_t SetTemp=10; //Setted temperature
 uint8_t Wireless=0;
 uint8_t Lang=1;
@@ -46,6 +59,7 @@ uint8_t PERF=1;
 uint8_t BRT_max = 80;
 uint8_t SPD_max = 80;
 uint8_t BRT_Disp = 20;
+double setted_temp = 16.0;
 
 result action1(eventMask e,navNode& nav, prompt &item) {
   EEPROM.write(0, BRT_Disp);
@@ -186,11 +200,11 @@ result MainScreen(menuOut& o,idleEvent e) {
   const char wifi_SYMBOL[] = { 80, '\0' }; //Заменить значок (не вытянутый)
   const char setup_SYMBOL[] = { 66, '\0' };
   if(temp>11){temp=9;}
-  tempPrint = temp;
+  tempPrint = setted_temp;
   switch(e) {
     case idleStart:/*o.println("suspending menu!")*/;break;
     case idling:{
-
+    mainScreenOn=true;
     if(!Temp_mode){tempPrint =(tempPrint*9/5) + 32;}
     if(tempPrint<9.95){
     u8g2.setFont(u8g2_font_ncenB24_tf);
@@ -214,13 +228,13 @@ result MainScreen(menuOut& o,idleEvent e) {
     o.print("C");
     }else{o.print("F");}
     u8g2.setFont(u8g2_font_open_iconic_embedded_2x_t); //{Eeeeeeeeeeeeeeeee}
-    if(blink%2==0){u8g2.drawUTF8(8, 64, ALERT_SYMBOL);}
+    if(blink%10==0){u8g2.drawUTF8(8, 64, ALERT_SYMBOL);}
     if(Wireless==1){u8g2.drawUTF8(72, 64, wifi_SYMBOL);}
     if(Wireless==2){u8g2.drawUTF8(72, 64, bluetooth_SYMBOL);}
     //u8g2.drawUTF8(72, 64, SYMBOL);
     u8g2.drawUTF8(106, 64, setup_SYMBOL);
     break;}
-    case idleEnd:/*o.println("resuming menu.");*/u8g2.setFont(fontName);break;
+    case idleEnd:/*o.println("resuming menu.");*/mainScreenOn=false;u8g2.setFont(fontName);break;
   }
 
   return proceed;
@@ -253,20 +267,40 @@ void setup() {
   nav.idleTask=MainScreen;//point a function to be used when menu is suspended
   nav.timeOut=30;
   nav.idleOn(MainScreen);
+
+  //butt1.setTickMode(AUTO);
+  //butt2.setTickMode(AUTO);
+  //butt3.setTickMode(AUTO);
+  //butt4.setTickMode(AUTO);
 }
 
+bool butt1_l = false;
+bool butt2_l = false;
+bool butt3_l = false;
+bool butt4_l = false;
 
 void loop() {
+  butt1.tick();
+  butt2.tick();
+  butt3.tick();
+  butt4.tick();
+  if (butt1.isClick()){butt1_l = true;nav.doNav(enterCmd);Serial.println("enterCmd");}else{butt1_l = false;}
+  if (butt2.isClick()){butt2_l = true;nav.doNav(upCmd);Serial.println("upCmd");}else{butt2_l = false;}
+  if (butt3.isClick()){butt3_l = true;nav.doNav(downCmd);Serial.println("downCmd");} else{butt3_l = false;}
+  if (butt4.isClick()){butt4_l = true;nav.doNav(escCmd);Serial.println("escCmd");} else{butt4_l = false;}
+  if(mainScreenOn&&butt2_l){setted_temp+=0.5;if(setted_temp>18){setted_temp=18;}}
+  if(mainScreenOn&&butt3_l){setted_temp-=0.5;if(setted_temp<5){setted_temp=5;}}
   nav.doInput();
-  //nav.doNav(upCmd);
- // if (nav.changed(0)) {
-    temp+=0.1;
+  //if (nav.changed(0)) {
+    //temp+=0.1;
     int contrast = map(BRT_Disp, 0, 100, 0, 190);
     u8g2.setContrast(contrast);
     u8g2.firstPage();
     do nav.doOutput(); while(u8g2.nextPage());
- // }
-  blink++;
+
+    blink++;
   if(blink>=11){blink=0;}
-  delay(300);//simulate other tasks delay
+  //}
+  
+  //delay(10);//simulate other tasks delay
 }
