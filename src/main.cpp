@@ -230,11 +230,11 @@ result MainScreen(menuOut& o,idleEvent e) {
     }
     if(Temp_mode){o.print("C");}else{o.print("F");}
     u8g2.setFont(u8g2_font_open_iconic_embedded_2x_t); //{Eeeeeeeeeeeeeeeee}
-    if(blink<50){u8g2.drawUTF8(8, 64, ALERT_SYMBOL);}
+    if(timer_1>0){u8g2.drawUTF8(8, 64, setup_SYMBOL);}
     if(Wireless==1){u8g2.drawUTF8(72, 64, wifi_SYMBOL);}
     if(Wireless==2){u8g2.drawUTF8(72, 64, bluetooth_SYMBOL);}
     //u8g2.drawUTF8(72, 64, SYMBOL);
-    u8g2.drawUTF8(106, 64, setup_SYMBOL);
+    if(blink>50){u8g2.drawUTF8(106, 64, ALERT_SYMBOL);}
     break;}
     case idleEnd:/*o.println("resuming menu.");*/mainScreenOn=false;u8g2.setFont(fontName);break;
   }
@@ -291,8 +291,8 @@ void loop() {
   if (butt3.isClick()){butt3_l = true;nav.doNav(downCmd);Serial.println("downCmd");} else{butt3_l = false;}
   if (butt4.isClick()){butt4_l = true;nav.doNav(escCmd);Serial.println("escCmd");} else{butt4_l = false;}
   
-  if(mainScreenOn&&(butt2_l||butt2.isStep())){setted_temp+=0.5;if(setted_temp>18){setted_temp=18;}showTemp=true;timer_1=0;}
-  if(mainScreenOn&&(butt3_l||butt3.isStep())){setted_temp-=0.5;if(setted_temp<5){setted_temp=5;}showTemp=true;timer_1=0;}
+  if(mainScreenOn&&(butt2_l||butt2.isStep())){setted_temp+=0.5;if(setted_temp>18){setted_temp=18;}showTemp=true;timer_1=1;}
+  if(mainScreenOn&&(butt3_l||butt3.isStep())){setted_temp-=0.5;if(setted_temp<5){setted_temp=5;}showTemp=true;timer_1=1;}
 
   nav.doInput();
   //if (nav.changed(0)) {
