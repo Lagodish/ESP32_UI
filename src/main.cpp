@@ -63,6 +63,24 @@ uint8_t BRT_Disp = 20;
 double setted_temp = 16.0;
 uint8_t timer_1 = 0;
 
+bool oldRetCode; 
+bool Hysteresis(double temp_now) {
+ 
+  bool retCode = false;
+  if (temp_now > setted_temp+PERF) {
+    retCode = true;
+    //showLcd(" on");
+  } else if ( temp_now < setted_temp-PERF) {
+    retCode = false;
+    //showLcd("off"); 
+  } else {
+    retCode = oldRetCode;
+  }
+   
+  oldRetCode = retCode;
+  return retCode;
+}
+
 result action1(eventMask e,navNode& nav, prompt &item) {
   EEPROM.write(0, BRT_Disp);
   EEPROM.write(1,BRT_max);
@@ -118,9 +136,9 @@ TOGGLE(Lang,LangueMenu,"Langue: ",action1,enterEvent,noStyle
 
 
 TOGGLE(PERF,PerformanceMenu,"Perf: ",action1,enterEvent,noStyle
-  ,VALUE("Eco",0,doNothing,noEvent)
-  ,VALUE("Balanced",1,doNothing,noEvent)
-  ,VALUE("High",2,doNothing,noEvent)
+  ,VALUE("Eco",3,doNothing,noEvent)
+  ,VALUE("Balanced",2,doNothing,noEvent)
+  ,VALUE("High",1,doNothing,noEvent)
 );
 
 
@@ -201,7 +219,7 @@ result MainScreen(menuOut& o,idleEvent e) {
   const char bluetooth_SYMBOL[] = { 74, '\0' };
   const char wifi_SYMBOL[] = { 80, '\0' }; //Заменить значок (не вытянутый)
   const char setup_SYMBOL[] = { 66, '\0' };
-  if(temp>11){temp=9;}
+  //if(temp>12){temp=9;}
   if(showTemp){tempPrint = setted_temp;}
   else{tempPrint = temp;}
   
@@ -234,7 +252,7 @@ result MainScreen(menuOut& o,idleEvent e) {
     if(Wireless==1){u8g2.drawUTF8(72, 64, wifi_SYMBOL);}
     if(Wireless==2){u8g2.drawUTF8(72, 64, bluetooth_SYMBOL);}
     //u8g2.drawUTF8(72, 64, SYMBOL);
-    if(blink>50){u8g2.drawUTF8(106, 64, ALERT_SYMBOL);}
+    if(!Hysteresis(temp)){u8g2.drawUTF8(106, 64, ALERT_SYMBOL);}
     break;}
     case idleEnd:/*o.println("resuming menu.");*/mainScreenOn=false;u8g2.setFont(fontName);break;
   }
@@ -280,6 +298,7 @@ bool butt1_l = false;
 bool butt2_l = false;
 bool butt3_l = false;
 bool butt4_l = false;
+
 
 void loop() {
   butt1.tick();

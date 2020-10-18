@@ -1,0 +1,22 @@
+if (temperature < (setTemp + HYSTERESIS)) digitalWrite(OUT, LOW);
+if (temperature > (setTemp - HYSTERESIS)) digitalWrite(OUT, HIGH);
+
+
+bool oldRetCode;
+ 
+bool isteresi(float temp) {
+ 
+  bool retCode = false;
+  if (temp > max) {
+    retCode = true;
+    showLcd(" on");
+  } else if ( temp < min ) {
+    retCode = false;
+    showLcd("off"); 
+  } else {
+    retCode = oldRetCode;
+  }
+   
+  oldRetCode = retCode;
+  return retCode;
+}
