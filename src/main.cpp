@@ -51,6 +51,7 @@ bool FanCtrl=HIGH;
 bool Temp_mode=HIGH;
 bool Silence=LOW;
 bool mainScreenOn = true;
+bool showTemp = false;
 
 uint8_t SetTemp=10; //Setted temperature
 uint8_t Wireless=0;
@@ -60,6 +61,7 @@ uint8_t BRT_max = 80;
 uint8_t SPD_max = 80;
 uint8_t BRT_Disp = 20;
 double setted_temp = 16.0;
+uint8_t timer_1 = 0;
 
 result action1(eventMask e,navNode& nav, prompt &item) {
   EEPROM.write(0, BRT_Disp);
@@ -200,7 +202,9 @@ result MainScreen(menuOut& o,idleEvent e) {
   const char wifi_SYMBOL[] = { 80, '\0' }; //Заменить значок (не вытянутый)
   const char setup_SYMBOL[] = { 66, '\0' };
   if(temp>11){temp=9;}
-  tempPrint = setted_temp;
+  if(showTemp){tempPrint = setted_temp;}
+  else{tempPrint = temp;}
+  
   switch(e) {
     case idleStart:/*o.println("suspending menu!")*/;break;
     case idling:{
@@ -224,11 +228,9 @@ result MainScreen(menuOut& o,idleEvent e) {
     u8g2.setFont(u8g2_font_fur30_tr);
     o.setCursor(14,2);
     }
-    if(Temp_mode){
-    o.print("C");
-    }else{o.print("F");}
+    if(Temp_mode){o.print("C");}else{o.print("F");}
     u8g2.setFont(u8g2_font_open_iconic_embedded_2x_t); //{Eeeeeeeeeeeeeeeee}
-    if(blink%10==0){u8g2.drawUTF8(8, 64, ALERT_SYMBOL);}
+    if(blink<50){u8g2.drawUTF8(8, 64, ALERT_SYMBOL);}
     if(Wireless==1){u8g2.drawUTF8(72, 64, wifi_SYMBOL);}
     if(Wireless==2){u8g2.drawUTF8(72, 64, bluetooth_SYMBOL);}
     //u8g2.drawUTF8(72, 64, SYMBOL);
@@ -288,8 +290,10 @@ void loop() {
   if (butt2.isClick()){butt2_l = true;nav.doNav(upCmd);Serial.println("upCmd");}else{butt2_l = false;}
   if (butt3.isClick()){butt3_l = true;nav.doNav(downCmd);Serial.println("downCmd");} else{butt3_l = false;}
   if (butt4.isClick()){butt4_l = true;nav.doNav(escCmd);Serial.println("escCmd");} else{butt4_l = false;}
-  if(mainScreenOn&&butt2_l){setted_temp+=0.5;if(setted_temp>18){setted_temp=18;}}
-  if(mainScreenOn&&butt3_l){setted_temp-=0.5;if(setted_temp<5){setted_temp=5;}}
+  
+  if(mainScreenOn&&(butt2_l||butt2.isStep())){setted_temp+=0.5;if(setted_temp>18){setted_temp=18;}showTemp=true;timer_1=0;}
+  if(mainScreenOn&&(butt3_l||butt3.isStep())){setted_temp-=0.5;if(setted_temp<5){setted_temp=5;}showTemp=true;timer_1=0;}
+
   nav.doInput();
   //if (nav.changed(0)) {
     //temp+=0.1;
@@ -299,8 +303,10 @@ void loop() {
     do nav.doOutput(); while(u8g2.nextPage());
 
     blink++;
-  if(blink>=11){blink=0;}
+  if(blink>=100){blink=0;}
   //}
+  if(showTemp){timer_1++;if(timer_1>101){timer_1=0;showTemp=false;}}
+  else{timer_1=0;showTemp=false;}
   
   //delay(10);//simulate other tasks delay
 }
