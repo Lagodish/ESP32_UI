@@ -24,7 +24,7 @@ GButton butt4(GP4);
 
 using namespace Menu;
 
-#define fontName u8g2_font_7x13_mf
+#define fontName u8g2_font_7x13_t_cyrillic //u8g2_font_7x13_mf
 #define fontX 7
 #define fontY 16
 #define offsetX 0
@@ -180,7 +180,7 @@ MENU(timeMenu,"Time & Date",doNothing,noEvent,noStyle
   ,EXIT("<Back")
 );
 
-
+//TODO работа на нагрев (если в комнате температура меньше чем нужно) + счетчик наработки
 MENU(mainMenu,"Settings",doNothing,noEvent,noStyle
   ,SUBMENU(setSilence)
   ,SUBMENU(timeMenu)
@@ -192,6 +192,7 @@ MENU(mainMenu,"Settings",doNothing,noEvent,noStyle
   ,SUBMENU(LangueMenu)
   ,FIELD(BRT_Disp,"Display Brt","%",0,100,10,0,action1,enterEvent,noStyle)
   ,EXIT("<Back")
+  ,EXIT("<Дарова корова!")
 );
 
 #define MAX_DEPTH 3
@@ -265,7 +266,7 @@ void setup() {
   while(!Serial);
   Wire.begin();
   u8g2.begin();
-
+  u8g2.enableUTF8Print();	
   EEPROM.begin(EEPROM_SIZE);
   delay(10);
   BRT_Disp = EEPROM.read(0);
