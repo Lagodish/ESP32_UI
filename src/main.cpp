@@ -7,6 +7,7 @@
 #include <menuIO/serialIn.h>
 #include <EEPROM.h>
 #include <GyverButton.h>
+#include <const.h>
 
 #define GP1 36
 #define GP2 39
@@ -180,8 +181,9 @@ MENU(timeMenu,"Time & Date",doNothing,noEvent,noStyle
   ,EXIT("<Back")
 );
 
+#define t "Kesha"
 //TODO работа на нагрев (если в комнате температура меньше чем нужно) + счетчик наработки
-MENU(mainMenu,"Settings",doNothing,noEvent,noStyle
+MENU(mainMenu, t ,doNothing,noEvent,noStyle
   ,SUBMENU(setSilence)
   ,SUBMENU(timeMenu)
   ,SUBMENU(LightMenu)
@@ -192,7 +194,6 @@ MENU(mainMenu,"Settings",doNothing,noEvent,noStyle
   ,SUBMENU(LangueMenu)
   ,FIELD(BRT_Disp,"Display Brt","%",0,100,10,0,action1,enterEvent,noStyle)
   ,EXIT("<Back")
-  ,EXIT("<Дарова корова!")
 );
 
 #define MAX_DEPTH 3
