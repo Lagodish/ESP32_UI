@@ -7,14 +7,14 @@
 #include <menuIO/serialIn.h>
 #include <EEPROM.h>
 #include <GyverButton.h>
-#include <const.h>
+#include <config.h>
 
 #define GP1 36
 #define GP2 39
 #define GP3 2
 #define GP4 4
 
-GButton butt1(GP1);
+GButton butt1(GP1); //GButton touch(BTN_PIN, LOW_PULL, NORM_OPEN);
 GButton butt2(GP2);
 GButton butt3(GP3);
 GButton butt4(GP4);
@@ -35,7 +35,6 @@ using namespace Menu;
 #define USE_HWI2C
 
 U8G2_SH1106_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0,22,21,U8X8_PIN_NONE);
-
 typedef u8g2_uint_t u8g_uint_t;
 
 const colorDef<uint8_t> colors[6] MEMMODE={
@@ -47,28 +46,14 @@ const colorDef<uint8_t> colors[6] MEMMODE={
   {{1,1},{1,0,0}},//titleColor
 };
 
-bool LightCtrl=HIGH;
-bool FanCtrl=HIGH;
-bool Temp_mode=HIGH;
-bool Silence=LOW;
-bool mainScreenOn = true;
-bool showTemp = false;
-
-uint8_t SetTemp=10; //Setted temperature
-uint8_t Wireless=0;
-uint8_t Lang=1;
-uint8_t PERF=1;
-uint8_t BRT_max = 80;
-uint8_t SPD_max = 80;
-uint8_t BRT_Disp = 20;
-double setted_temp = 16.0;
-uint8_t timer_1 = 0;
 
 bool oldRetCode; 
 bool Hysteresis(double temp_now) {
- 
+
+  if(!Temp_mode){temp_now = int((temp_now*9/5)+32);}    
+
   bool retCode = false;
-  if (temp_now > setted_temp+PERF) {
+  if (temp_now > setted_temp+1.0) {
     retCode = true;
     //showLcd(" on");
   } else if ( temp_now < setted_temp-PERF) {
@@ -82,108 +67,121 @@ bool Hysteresis(double temp_now) {
   return retCode;
 }
 
-result action1(eventMask e,navNode& nav, prompt &item) {
+result action5(eventMask e,navNode& nav, prompt &item) {
+  EEPROM.write(8,Silence);
+  EEPROM.commit();
+  return proceed;
+}
+
+result action4(eventMask e,navNode& nav, prompt &item) {
+  EEPROM.write(3,PERF); 
+  EEPROM.commit();
+  return proceed;
+}
+
+result action3(eventMask e,navNode& nav, prompt &item) {
   EEPROM.write(0, BRT_Disp);
-  EEPROM.write(1,BRT_max);
-  EEPROM.write(2,SPD_max);
-  EEPROM.write(3,PERF);
-  EEPROM.write(4,Lang);
+  EEPROM.commit();
+  return proceed;
+}
+
+result action2(eventMask e,navNode& nav, prompt &item) {
   EEPROM.write(5,Temp_mode);
+  if(Temp_mode){ // C    (0°C × 9/5) + 32 = 32°F
+    setted_temp = int((setted_temp-32)*5/9);
+  }
+  else{ //  F    (32°F − 32) × 5/9 = 0°C
+    setted_temp = (setted_temp*9/5)+32;
+  }
+  EEPROM.write(4,setted_temp);
+  EEPROM.commit();
+  return proceed;
+}
+
+result action1(eventMask e,navNode& nav, prompt &item) {  
+  EEPROM.write(1,BRT_max);
+  EEPROM.write(2,SPD_max); 
   EEPROM.write(6,LightCtrl);
   EEPROM.write(7,FanCtrl);
-  EEPROM.write(8,Silence);
   EEPROM.write(9,Wireless);
-
   EEPROM.commit();
   return proceed;
 }
 
 
-TOGGLE(LightCtrl,setLight,"Auto Light: ",action1,enterEvent,noStyle
-  ,VALUE("On",HIGH,doNothing,noEvent)
-  ,VALUE("Off",LOW,doNothing,noEvent)
+TOGGLE(LightCtrl,setLight,text_2,action1,enterEvent,noStyle
+  ,VALUE(text_8,HIGH,doNothing,noEvent)
+  ,VALUE(text_9,LOW,doNothing,noEvent)
 );
 
 
-TOGGLE(FanCtrl,setFan,"Auto Fan: ",action1,enterEvent,noStyle
-  ,VALUE("On",HIGH,doNothing,noEvent)
-  ,VALUE("Off",LOW,doNothing,noEvent)
+TOGGLE(FanCtrl,setFan,text_3,action1,enterEvent,noStyle
+  ,VALUE(text_8,HIGH,doNothing,noEvent)
+  ,VALUE(text_9,LOW,doNothing,noEvent)
 );
 
 
-TOGGLE(Temp_mode,TempMenu,"Temp: ",action1,enterEvent,noStyle
-  ,VALUE("Celsius",HIGH,doNothing,noEvent)
-  ,VALUE("Fahrenheit",LOW,doNothing,noEvent)
+TOGGLE(Temp_mode,TempMenu,text_4,action2,enterEvent,noStyle
+  ,VALUE(text_22,HIGH,doNothing,noEvent)  //C
+  ,VALUE(text_23,LOW,doNothing,noEvent)   //F
 );
 
 
-TOGGLE(Silence,setSilence,"Silence Mode: ",action1,enterEvent,noStyle
-  ,VALUE("On",HIGH,doNothing,noEvent)
-  ,VALUE("Off",LOW,doNothing,noEvent)
+TOGGLE(Silence,setSilence,text_5,action5,enterEvent,noStyle
+  ,VALUE(text_8,HIGH,doNothing,noEvent)
+  ,VALUE(text_9,LOW,doNothing,noEvent)
 );
 
-TOGGLE(Wireless,setWireless,"Wireless: ",action1,enterEvent,noStyle
-  ,VALUE("Off",0,doNothing,noEvent)
+TOGGLE(Wireless,setWireless,text_6,action1,enterEvent,noStyle
+  ,VALUE(text_9,0,doNothing,noEvent)
   ,VALUE("WiFi",1,doNothing,noEvent)
   ,VALUE("BLE",2,doNothing,noEvent)
 );
 
 
-TOGGLE(Lang,LangueMenu,"Langue: ",action1,enterEvent,noStyle
-  ,VALUE("Ru",0,doNothing,noEvent)
-  ,VALUE("En",1,doNothing,noEvent)
-  ,VALUE("Ge",2,doNothing,noEvent)
-);
-
-
-TOGGLE(PERF,PerformanceMenu,"Perf: ",action1,enterEvent,noStyle
-  ,VALUE("Eco",3,doNothing,noEvent)
-  ,VALUE("Balanced",2,doNothing,noEvent)
-  ,VALUE("High",1,doNothing,noEvent)
+TOGGLE(PERF,PerformanceMenu,text_7,action4,enterEvent,noStyle
+  ,VALUE(text_19,3,doNothing,noEvent)
+  ,VALUE(text_20,2,doNothing,noEvent)
+  ,VALUE(text_21,1,doNothing,noEvent)
 );
 
 
 
-MENU(LightMenu,"Light control",doNothing,noEvent,noStyle
+MENU(LightMenu,text_16,doNothing,noEvent,noStyle
   ,SUBMENU(setLight)
-  ,FIELD(BRT_max,"Max brt","%",0,100,10,1,action1,enterEvent,wrapStyle)
-  ,EXIT("<Back")
+  ,FIELD(BRT_max,text_18,"%",0,100,10,1,action1,enterEvent,wrapStyle)
+  ,EXIT(text_11)
 );
 
 
-MENU(FanMenu,"Fan control",doNothing,noEvent,noStyle
+MENU(FanMenu,text_15,doNothing,noEvent,noStyle
   ,SUBMENU(setFan)
-  ,FIELD(SPD_max,"Max spd","%",0,100,10,1,action1,enterEvent,wrapStyle)
-  ,EXIT("<Back")
+  ,FIELD(SPD_max,text_17,"%",0,100,10,1,action1,enterEvent,wrapStyle)
+  ,EXIT(text_11)
 );
  
-uint16_t hrs=12;
-uint16_t mins=0;
 
-uint16_t year=2020;
-uint16_t month=10;
-uint16_t day=15;
 
-PADMENU(YMD_Menu,"Date",doNothing,noEvent,noStyle
+PADMENU(YMD_Menu,text_14,doNothing,noEvent,noStyle
   ,FIELD(year,"","/",1900,3000,20,1,doNothing,noEvent,noStyle)
   ,FIELD(month,"","/",1,12,1,0,doNothing,noEvent,wrapStyle)
   ,FIELD(day,"","",1,31,1,0,doNothing,noEvent,wrapStyle)
 );
 
-PADMENU(HM_Menu,"Time",doNothing,noEvent,noStyle
+PADMENU(HM_Menu,text_13,doNothing,noEvent,noStyle
   ,FIELD(hrs,"",":",0,23,1,0,doNothing,noEvent,wrapStyle)
   ,FIELD(mins,"","",0,59,1,0,doNothing,noEvent,wrapStyle)
 );
 
-MENU(timeMenu,"Time & Date",doNothing,noEvent,noStyle
+MENU(timeMenu,text_12,doNothing,noEvent,noStyle
   ,SUBMENU(HM_Menu)
   ,SUBMENU(YMD_Menu)
-  ,EXIT("<Back")
+  ,EXIT(text_11)
 );
 
-#define t "Kesha"
+
 //TODO работа на нагрев (если в комнате температура меньше чем нужно) + счетчик наработки
-MENU(mainMenu, t ,doNothing,noEvent,noStyle
+MENU(mainMenu, text_1 ,doNothing,noEvent,noStyle
   ,SUBMENU(setSilence)
   ,SUBMENU(timeMenu)
   ,SUBMENU(LightMenu)
@@ -191,12 +189,11 @@ MENU(mainMenu, t ,doNothing,noEvent,noStyle
   ,SUBMENU(PerformanceMenu)
   ,SUBMENU(setWireless)
   ,SUBMENU(TempMenu)
-  ,SUBMENU(LangueMenu)
-  ,FIELD(BRT_Disp,"Display Brt","%",0,100,10,0,action1,enterEvent,noStyle)
-  ,EXIT("<Back")
+  ,FIELD(BRT_Disp,text_10," %",0,100,10,0,action3,enterEvent,noStyle)
+  ,EXIT(text_11)
 );
 
-#define MAX_DEPTH 3
+
 
 serialIn serial(Serial);
 MENU_INPUTS(in,&serial);
@@ -221,15 +218,16 @@ result MainScreen(menuOut& o,idleEvent e) {
   const char bluetooth_SYMBOL[] = { 74, '\0' };
   const char wifi_SYMBOL[] = { 80, '\0' }; //Заменить значок (не вытянутый)
   const char setup_SYMBOL[] = { 66, '\0' };
-  //if(temp>12){temp=9;}
+
   if(showTemp){tempPrint = setted_temp;}
-  else{tempPrint = temp;}
+  else{
+    if(Temp_mode){tempPrint = temp;}
+    else{tempPrint = int((temp*9/5)+32);}}
   
   switch(e) {
     case idleStart:/*o.println("suspending menu!")*/;break;
     case idling:{
     mainScreenOn=true;
-    if(!Temp_mode){tempPrint =(tempPrint*9/5) + 32;}
     if(tempPrint<9.95){
     u8g2.setFont(u8g2_font_ncenB24_tf);
     u8g2.drawUTF8(83, 33, DEGREE_SYMBOL);
@@ -274,7 +272,7 @@ void setup() {
   BRT_max = EEPROM.read(1);
   SPD_max = EEPROM.read(2);
   PERF = EEPROM.read(3);
-  Lang = EEPROM.read(4);
+  setted_temp = EEPROM.read(4);
   Temp_mode = EEPROM.read(5);
   LightCtrl = EEPROM.read(6);
   FanCtrl = EEPROM.read(7);
@@ -312,8 +310,28 @@ void loop() {
   if (butt3.isClick()){butt3_l = true;nav.doNav(downCmd);Serial.println("downCmd");} else{butt3_l = false;}
   if (butt4.isClick()){butt4_l = true;nav.doNav(escCmd);Serial.println("escCmd");} else{butt4_l = false;}
   
-  if(mainScreenOn&&(butt2_l||butt2.isStep())){setted_temp+=0.5;if(setted_temp>18){setted_temp=18;}showTemp=true;timer_1=1;}
-  if(mainScreenOn&&(butt3_l||butt3.isStep())){setted_temp-=0.5;if(setted_temp<5){setted_temp=5;}showTemp=true;timer_1=1;}
+  if(mainScreenOn&&(butt2_l||butt2.isStep())){
+
+    if(Temp_mode){
+    setted_temp+=0.5;
+    if(setted_temp>18){setted_temp=18;}}
+    else{
+    setted_temp+=1;
+    if(setted_temp>64){setted_temp=64;}}
+
+    showTemp=true;
+    timer_1=1;}
+  if(mainScreenOn&&(butt3_l||butt3.isStep())){
+
+    if(Temp_mode){
+    setted_temp-=0.5;
+    if(setted_temp<5){setted_temp=5;}}
+    else{
+    setted_temp-=1;
+    if(setted_temp<41){setted_temp=41;}}
+
+    showTemp=true;
+    timer_1=1;}
 
   nav.doInput();
   //if (nav.changed(0)) {
