@@ -66,12 +66,12 @@ bool Hysteresis(double temp_now) {
   oldRetCode = retCode;
   return retCode;
 }
-
+/*
 result action5(eventMask e,navNode& nav, prompt &item) {
   EEPROM.write(8,Silence);
   EEPROM.commit();
   return proceed;
-}
+}*/
 
 result action4(eventMask e,navNode& nav, prompt &item) {
   EEPROM.write(3,PERF); 
@@ -91,7 +91,7 @@ result action2(eventMask e,navNode& nav, prompt &item) {
     setted_temp = int((setted_temp-32)*5/9);
   }
   else{ //  F    (32°F − 32) × 5/9 = 0°C
-    setted_temp = (setted_temp*9/5)+32;
+    setted_temp = int((setted_temp*9/5)+32);
   }
   EEPROM.write(4,setted_temp);
   EEPROM.commit();
@@ -126,11 +126,11 @@ TOGGLE(Temp_mode,TempMenu,text_4,action2,enterEvent,noStyle
   ,VALUE(text_23,LOW,doNothing,noEvent)   //F
 );
 
-
+/*
 TOGGLE(Silence,setSilence,text_5,action5,enterEvent,noStyle
   ,VALUE(text_8,HIGH,doNothing,noEvent)
   ,VALUE(text_9,LOW,doNothing,noEvent)
-);
+);*/
 
 TOGGLE(Wireless,setWireless,text_6,action1,enterEvent,noStyle
   ,VALUE(text_9,0,doNothing,noEvent)
@@ -182,7 +182,7 @@ MENU(timeMenu,text_12,doNothing,noEvent,noStyle
 
 //TODO работа на нагрев (если в комнате температура меньше чем нужно) + счетчик наработки
 MENU(mainMenu, text_1 ,doNothing,noEvent,noStyle
-  ,SUBMENU(setSilence)
+  //,SUBMENU(setSilence)
   ,SUBMENU(timeMenu)
   ,SUBMENU(LightMenu)
   ,SUBMENU(FanMenu)
