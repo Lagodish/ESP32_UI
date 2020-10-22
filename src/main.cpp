@@ -9,11 +9,6 @@
 #include <GyverButton.h>
 #include <config.h>
 
-#define GP1 36
-#define GP2 39
-#define GP3 2
-#define GP4 4
-
 GButton butt1(GP1); //GButton touch(BTN_PIN, LOW_PULL, NORM_OPEN);
 GButton butt2(GP2);
 GButton butt3(GP3);
@@ -21,18 +16,7 @@ GButton butt4(GP4);
 
 //xSemaphoreCreateMutex
 
-#define EEPROM_SIZE 30
-
 using namespace Menu;
-
-#define fontName u8g2_font_7x13_t_cyrillic //u8g2_font_7x13_mf
-#define fontX 7
-#define fontY 16
-#define offsetX 0
-#define offsetY 0
-#define U8_Width 128
-#define U8_Height 64
-#define USE_HWI2C
 
 U8G2_SH1106_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0,22,21,U8X8_PIN_NONE);
 typedef u8g2_uint_t u8g_uint_t;
@@ -55,10 +39,8 @@ bool Hysteresis(double temp_now) {
   bool retCode = false;
   if (temp_now > setted_temp+1.0) {
     retCode = true;
-    //showLcd(" on");
   } else if ( temp_now < setted_temp-PERF) {
     retCode = false;
-    //showLcd("off"); 
   } else {
     retCode = oldRetCode;
   }
@@ -66,12 +48,6 @@ bool Hysteresis(double temp_now) {
   oldRetCode = retCode;
   return retCode;
 }
-/*
-result action5(eventMask e,navNode& nav, prompt &item) {
-  EEPROM.write(8,Silence);
-  EEPROM.commit();
-  return proceed;
-}*/
 
 result action4(eventMask e,navNode& nav, prompt &item) {
   EEPROM.write(3,PERF); 
@@ -87,10 +63,10 @@ result action3(eventMask e,navNode& nav, prompt &item) {
 
 result action2(eventMask e,navNode& nav, prompt &item) {
   EEPROM.write(5,Temp_mode);
-  if(Temp_mode){ // C    (0°C × 9/5) + 32 = 32°F
+  if(Temp_mode){ // C
     setted_temp = int((setted_temp-32)*5/9);
   }
-  else{ //  F    (32°F − 32) × 5/9 = 0°C
+  else{ //  F
     setted_temp = int((setted_temp*9/5)+32);
   }
   EEPROM.write(4,setted_temp);
@@ -126,12 +102,6 @@ TOGGLE(Temp_mode,TempMenu,text_4,action2,enterEvent,noStyle
   ,VALUE(text_23,LOW,doNothing,noEvent)   //F
 );
 
-/*
-TOGGLE(Silence,setSilence,text_5,action5,enterEvent,noStyle
-  ,VALUE(text_8,HIGH,doNothing,noEvent)
-  ,VALUE(text_9,LOW,doNothing,noEvent)
-);*/
-
 TOGGLE(Wireless,setWireless,text_6,action1,enterEvent,noStyle
   ,VALUE(text_9,0,doNothing,noEvent)
   ,VALUE("WiFi",1,doNothing,noEvent)
@@ -145,14 +115,11 @@ TOGGLE(PERF,PerformanceMenu,text_7,action4,enterEvent,noStyle
   ,VALUE(text_21,1,doNothing,noEvent)
 );
 
-
-
 MENU(LightMenu,text_16,doNothing,noEvent,noStyle
   ,SUBMENU(setLight)
   ,FIELD(BRT_max,text_18,"%",0,100,10,0,action1,enterEvent,wrapStyle)
   ,EXIT(text_11)
 );
-
 
 MENU(FanMenu,text_15,doNothing,noEvent,noStyle
   ,SUBMENU(setFan)
@@ -160,8 +127,6 @@ MENU(FanMenu,text_15,doNothing,noEvent,noStyle
   ,EXIT(text_11)
 );
  
-
-
 PADMENU(YMD_Menu,text_14,doNothing,noEvent,noStyle
   ,FIELD(year,"","/",1900,3000,20,1,doNothing,noEvent,noStyle)
   ,FIELD(month,"","/",1,12,1,0,doNothing,noEvent,wrapStyle)
@@ -182,7 +147,6 @@ MENU(timeMenu,text_12,doNothing,noEvent,noStyle
 
 //TODO работа на нагрев (если в комнате температура меньше чем нужно) + счетчик наработки
 MENU(mainMenu, text_1 ,doNothing,noEvent,noStyle
-  //,SUBMENU(setSilence)
   ,SUBMENU(timeMenu)
   ,SUBMENU(LightMenu)
   ,SUBMENU(FanMenu)
@@ -193,11 +157,8 @@ MENU(mainMenu, text_1 ,doNothing,noEvent,noStyle
   ,EXIT(text_11)
 );
 
-
-
 serialIn serial(Serial);
 MENU_INPUTS(in,&serial);
-
 
 MENU_OUTPUTS(out,MAX_DEPTH
   ,U8G2_OUT(u8g2,colors,fontX,fontY,offsetX,offsetY,{0,0,U8_Width/fontX,U8_Height/fontY})
@@ -205,10 +166,6 @@ MENU_OUTPUTS(out,MAX_DEPTH
 );
 
 NAVROOT(nav,mainMenu,MAX_DEPTH,in,out);
-
-int blink=0;
-double temp = 9.0;
-double tempPrint =0.0;
 
 //when menu is suspended
 result MainScreen(menuOut& o,idleEvent e) {
@@ -281,24 +238,13 @@ void setup() {
   
   u8g2.setFont(fontName);
   // u8g2.setBitmapMode(0);
-
   // disable second option
   //mainMenu[1].enabled=disabledStatus;
   nav.idleTask=MainScreen;//point a function to be used when menu is suspended
   nav.timeOut=30;
   nav.idleOn(MainScreen);
 
-  //butt1.setTickMode(AUTO);
-  //butt2.setTickMode(AUTO);
-  //butt3.setTickMode(AUTO);
-  //butt4.setTickMode(AUTO);
 }
-
-bool butt1_l = false;
-bool butt2_l = false;
-bool butt3_l = false;
-bool butt4_l = false;
-
 
 void loop() {
   butt1.tick();
@@ -335,7 +281,6 @@ void loop() {
 
   nav.doInput();
   //if (nav.changed(0)) {
-    //temp+=0.1;
     int contrast = map(BRT_Disp, 0, 100, 0, 190);
     u8g2.setContrast(contrast);
     u8g2.firstPage();
@@ -346,6 +291,5 @@ void loop() {
   //}
   if(showTemp){timer_1++;if(timer_1>101){timer_1=0;showTemp=false;}}
   else{timer_1=0;showTemp=false;}
-  
-  //delay(10);//simulate other tasks delay
+
 }

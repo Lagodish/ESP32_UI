@@ -1,6 +1,26 @@
 #include <Arduino.h>
 
+/////////////////////// Setup Config  //////////////////////
+
+#define  language_RU    //Russian 
+//#define language_EU   //English
+
+#define  DualZone        //Dual Zone Wine Fridges
+
+//////////////////////  Config End    //////////////////////
+
+
 #define MAX_DEPTH 3
+
+#define EEPROM_SIZE 30
+#define fontName u8g2_font_7x13_t_cyrillic //u8g2_font_7x13_mf
+#define fontX 7
+#define fontY 16
+#define offsetX 0
+#define offsetY 0
+#define U8_Width 128
+#define U8_Height 64
+#define USE_HWI2C
 
 #define  language_RU 
 //#define language_EU
@@ -57,9 +77,16 @@
   #define text_23   "Фаренгейта"
 #endif
 
+#ifdef DualZone
+  bool DualZoneMode = true;
+#endif
+
+#ifndef DualZone
+  bool DualZoneMode = false;
+#endif
+
 uint16_t hrs=12;
 uint16_t mins=0;
-
 uint16_t year=2020;
 uint16_t month=10;
 uint16_t day=15;
@@ -71,10 +98,23 @@ bool Silence=LOW;
 bool mainScreenOn = true;
 bool showTemp = false;
 
+bool butt1_l = false;
+bool butt2_l = false;
+bool butt3_l = false;
+bool butt4_l = false;
+
 uint8_t Wireless=0;
 uint8_t PERF=1;
 uint8_t BRT_max = 80;
 uint8_t SPD_max = 80;
 uint8_t BRT_Disp = 20;
-double setted_temp = 16.0;
 uint8_t timer_1 = 0;
+uint8_t blink=0;
+double setted_temp = 16.0;
+double temp = 9.0;
+double tempPrint =0.0;
+
+const uint8_t GP1 = 36;
+const uint8_t GP2 = 39;
+const uint8_t GP3 = 2;
+const uint8_t GP4 = 4;
