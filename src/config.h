@@ -33,8 +33,8 @@
 
 #ifdef language_RU
   #define text_1    "Настройки"
-  #define text_2    "Авто режим: "
-  #define text_3    "Авто режим: "
+  #define text_2    "Авто: "
+  #define text_3    "Авто: "
   #define text_4    "Шкала: "
   #define text_5    "???"
   #define text_6    "Сеть: "
@@ -48,8 +48,8 @@
   #define text_14   "Дата"
   #define text_15   "Верниляторы" 
   #define text_16   "Подсветка"
-  #define text_17   "Max обороты"
-  #define text_18   "Max яркость"
+  #define text_17   "Обороты"
+  #define text_18   "Яркость"
   #define text_19   "Эко"
   #define text_20   "Средний"
   #define text_21   "Высокий"

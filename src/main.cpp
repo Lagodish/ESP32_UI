@@ -149,14 +149,14 @@ TOGGLE(PERF,PerformanceMenu,text_7,action4,enterEvent,noStyle
 
 MENU(LightMenu,text_16,doNothing,noEvent,noStyle
   ,SUBMENU(setLight)
-  ,FIELD(BRT_max,text_18,"%",0,100,10,1,action1,enterEvent,wrapStyle)
+  ,FIELD(BRT_max,text_18,"%",0,100,10,0,action1,enterEvent,wrapStyle)
   ,EXIT(text_11)
 );
 
 
 MENU(FanMenu,text_15,doNothing,noEvent,noStyle
   ,SUBMENU(setFan)
-  ,FIELD(SPD_max,text_17,"%",0,100,10,1,action1,enterEvent,wrapStyle)
+  ,FIELD(SPD_max,text_17,"%",0,100,10,0,action1,enterEvent,wrapStyle)
   ,EXIT(text_11)
 );
  
