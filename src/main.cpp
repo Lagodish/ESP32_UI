@@ -217,46 +217,71 @@ result MainScreen(menuOut& o,idleEvent e) {
   return proceed;
 }
 
-void setup() {
-  Serial.begin(9600);
-  while(!Serial);
-  Wire.begin();
-  u8g2.begin();
-  u8g2.enableUTF8Print();	
-  EEPROM.begin(EEPROM_SIZE);
-  delay(10);
-  BRT_Disp = EEPROM.read(0);
-  BRT_max = EEPROM.read(1);
-  SPD_max = EEPROM.read(2);
-  PERF = EEPROM.read(3);
-  setted_temp = EEPROM.read(4);
-  Temp_mode = EEPROM.read(5);
-  LightCtrl = EEPROM.read(6);
-  FanCtrl = EEPROM.read(7);
-  Silence = EEPROM.read(8);
-  Wireless = EEPROM.read(9);
+void Test_1( void * parameter)
+{ double y=0;
+  while (1){
+  y=y*0.1/100;
+  y++;
+  if(y>10000) y=0;
+  if(y<-10000) y=0;
+  Serial.println(y);
+  vTaskDelay(1/portTICK_PERIOD_MS);
+}}
+
+
+void Test_2( void * parameter)
+{ float i=0;
+  while (1){
   
+  i=i*0.1/100;
+  i++;
+  i=i*6;
+  if(i>10000) i=0;
+  if(i<-10000) i=0;
+  Serial.println(i);
+  vTaskDelay(10/portTICK_PERIOD_MS);
+}}
+
+void DisplayTask( void * parameter)
+{
+    Serial.println("Display");
+
+    Wire.begin();
+    u8g2.begin();
+    u8g2.enableUTF8Print();	
+    if (EEPROM.begin(EEPROM_SIZE)){
+    delay(10);
+    BRT_Disp = EEPROM.read(0);
+    BRT_max = EEPROM.read(1);
+    SPD_max = EEPROM.read(2);
+    PERF = EEPROM.read(3);
+    setted_temp = EEPROM.read(4);
+    Temp_mode = EEPROM.read(5);
+    LightCtrl = EEPROM.read(6);
+    FanCtrl = EEPROM.read(7);
+    Silence = EEPROM.read(8);
+    Wireless = EEPROM.read(9);
+    }
+
   u8g2.setFont(fontName);
   // u8g2.setBitmapMode(0);
-  // disable second option
-  //mainMenu[1].enabled=disabledStatus;
+  //mainMenu[1].enabled=disabledStatus; //disable second option
   nav.idleTask=MainScreen;//point a function to be used when menu is suspended
   nav.timeOut=30;
   nav.idleOn(MainScreen);
 
-}
-
-void loop() {
-  butt1.tick();
-  butt2.tick();
-  butt3.tick();
-  butt4.tick();
-  if (butt1.isClick()){butt1_l = true;nav.doNav(enterCmd);Serial.println("enterCmd");}else{butt1_l = false;}
-  if (butt2.isClick()){butt2_l = true;nav.doNav(upCmd);Serial.println("upCmd");}else{butt2_l = false;}
-  if (butt3.isClick()){butt3_l = true;nav.doNav(downCmd);Serial.println("downCmd");} else{butt3_l = false;}
-  if (butt4.isClick()){butt4_l = true;nav.doNav(escCmd);Serial.println("escCmd");} else{butt4_l = false;}
+    while(1){
+       
+    butt1.tick();
+    butt2.tick();
+    butt3.tick();
+    butt4.tick();
+    if (butt1.isClick()){butt1_l = true;nav.doNav(enterCmd);Serial.println("enterCmd");}else{butt1_l = false;}
+    if (butt2.isClick()){butt2_l = true;nav.doNav(upCmd);Serial.println("upCmd");}else{butt2_l = false;}
+    if (butt3.isClick()){butt3_l = true;nav.doNav(downCmd);Serial.println("downCmd");} else{butt3_l = false;}
+    if (butt4.isClick()){butt4_l = true;nav.doNav(escCmd);Serial.println("escCmd");} else{butt4_l = false;}
   
-  if(mainScreenOn&&(butt2_l||butt2.isStep())){
+    if(mainScreenOn&&(butt2_l||butt2.isStep())){
 
     if(Temp_mode){
     setted_temp+=0.5;
@@ -292,4 +317,43 @@ void loop() {
   if(showTemp){timer_1++;if(timer_1>101){timer_1=0;showTemp=false;}}
   else{timer_1=0;showTemp=false;}
 
+     vTaskDelay(10/portTICK_PERIOD_MS);
+    }
+
+    Serial.println("Ending Display");
+    vTaskDelete( NULL );
+}
+
+void setup() {
+  Serial.begin(9600);
+  while(!Serial);
+  
+  xTaskCreatePinnedToCore(
+    DisplayTask,             /* Task function. */
+    "DisplayTask",           /* String with name of task. */
+    8000,            /* Stack size in bytes. */
+    NULL,             /* Parameter passed as input of the task */
+    2,                /* Priority of the task. */
+    NULL,           /* Task handle. */
+    0);               /* Core 1 */ 
+
+  xTaskCreate(
+                    Test_1,          
+                    "Test_1",        
+                    8000,            
+                    NULL,             
+                    1,               
+                    NULL);  
+
+  xTaskCreate(
+                    Test_2,          
+                    "Test_2",        
+                    8000,            
+                    NULL,             
+                    1,               
+                    NULL);
+}
+
+void loop() {
+  vTaskDelete( NULL );
 }
